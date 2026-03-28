@@ -1,0 +1,154 @@
+spec_version: 1
+name: InvoiceReconcileEnv
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
+version: "1.1.0"
+description: >
+  Accounts Payable invoice reconciliation environment where an AI agent performs
+  three-way matching (invoice ↔ PO ↔ goods receipt), applies price tolerance bands,
+  detects duplicates and fraud patterns, handles partial shipments, and makes payment
+  decisions across easy, medium, and hard task tiers.
+author: "ShambhaviS08"
+license: "MIT"
+tags:
+  - finance
+  - accounts-payable
+  - invoice-reconciliation
+  - document-understanding
+  - fraud-detection
+  - real-world
+  - openenv
+
+tasks:
+  - id: easy
+    name: "Single Invoice Reconciliation"
+    difficulty: easy
+    description: >
+      Process a single clean invoice with a straightforward three-way match.
+      Agent must extract fields, verify against PO and goods receipt, and approve.
+    expected_score: 1.0
+
+  - id: medium
+    name: "Batch Invoice Processing"
+    difficulty: medium
+    description: >
+      Process a batch of 3 invoices with mixed conditions: one clean approve,
+      one price variance above the 5% hard threshold (flag:price),
+      and one partial shipment where 80 of 100 units were received (flag:quantity).
+    expected_score: 1.0
+
+  - id: hard
+    name: "Complex Batch with Fraud Detection"
+    difficulty: hard
+    description: >
+      Process 5 invoices under realistic conditions including OCR noise in item
+      descriptions and vendor names, a price variance within the 2% soft tolerance
+      (must approve, not flag), a duplicate invoice with the same PO reference,
+      a priority invoice with an early-payment discount window alongside a partial
+      shipment trap, and a fraud-like pattern where the invoice bank account does
+      not match the PO vendor bank account. Agent must balance accuracy, efficiency,
+      and anomaly detection.
+    expected_score: 1.0
+
+action_space:
+  type: discrete
+  actions:
+    - name: extract_fields
+      description: Extract all fields from the current invoice (vendor, total, line items, bank account). Always first.
+      parameters:
+        invoice_id: string
+    - name: retrieve_po
+      description: Fetch the matching Purchase Order record for comparison.
+      parameters:
+        invoice_id: string
+    - name: retrieve_receipt
+      description: Fetch the Goods Receipt to verify delivered quantities.
+      parameters:
+        invoice_id: string
+    - name: flag_discrepancy
+      description: Flag the invoice with a discrepancy type. Moves to next invoice.
+      parameters:
+        invoice_id: string
+        discrepancy_type: "price | quantity | duplicate | vendor | tax | other"
+        reason: string (optional)
+    - name: approve_payment
+      description: Approve the invoice for payment. Moves to next invoice.
+      parameters:
+        invoice_id: string
+        amount: float
+    - name: reject_invoice
+      description: Reject the invoice outright. Moves to next invoice.
+      parameters:
+        invoice_id: string
+        reason: string (optional)
+    - name: escalate
+      description: Escalate to a human manager. Required for fraud signals and unknown vendors.
+      parameters:
+        invoice_id: string
+        reason: string
+
+observation_space:
+  fields:
+    - name: current_invoice
+      type: object
+      description: >
+        The invoice currently being processed. Contains invoice_id, vendor_id,
+        vendor_name (may have OCR noise in hard mode), line_items (description,
+        quantity, unit_price), total, po_reference, bank_account, priority flag,
+        early_payment_discount_pct, discount_deadline_steps.
+    - name: po_data
+      type: object | null
+      description: Purchase order data. Only populated after retrieve_po action.
+    - name: receipt_data
+      type: object | null
+      description: Goods receipt data. Only populated after retrieve_receipt action.
+    - name: batch_status
+      type: dict[string, string]
+      description: "Status of all invoices: pending | approved | flagged | rejected | escalated"
+    - name: flags
+      type: list[string]
+      description: Discrepancy types flagged so far in this episode.
+    - name: message
+      type: string
+      description: Human-readable feedback from the last action including reward signals.
+    - name: step_count
+      type: int
+      description: Current step number.
+    - name: task_level
+      type: string
+      description: "easy | medium | hard"
+    - name: tolerance_soft_pct
+      type: float
+      description: Price variance at or below this % is acceptable (approve). Default 2.0.
+    - name: tolerance_hard_pct
+      type: float
+      description: Price variance above this % must be flagged. Default 5.0.
+    - name: priority_invoice_active
+      type: bool
+      description: True when current invoice has an active early-payment discount.
+    - name: discount_deadline_steps
+      type: int
+      description: Steps remaining before early-payment discount expires.
+    - name: early_payment_discount_pct
+      type: float
+      description: Discount percentage available if approved before deadline.
+    - name: done
+      type: bool
+      description: Whether the episode has ended.
+    - name: reward
+      type: float
+      description: Step-level reward signal.
+
+reward_function:
+  description: >
+    Dense reward shaping throughout the episode. Rewards correct field extraction
+    (+0.15), PO retrieval (+0.10), receipt retrieval (+0.10), correct flag with
+    right type (+0.35), correct approval (+0.40), correct escalation (+0.35).
+    Penalties for false flags (-0.20), wrong approvals (-0.30), redundant actions
+    (-0.05). Efficiency penalty (×0.85) if >80% of max steps used.
+    Episode ends with bonus reward = final_grade × 0.5.
+    Early payment discount capture adds +0.10 bonus.
+  range: [-1.0, 1.5]
+  sparse: false
