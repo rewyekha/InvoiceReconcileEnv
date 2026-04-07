@@ -341,7 +341,7 @@ def grade_episode(
     they get a bonus. But if the invoice had a quantity discrepancy, no bonus applies.
     """
     if not ground_truth:
-        return 0.0
+        return 0.001
 
     if priority_bonuses is None:
         priority_bonuses = {}
@@ -726,7 +726,7 @@ class InvoicereconcileenvEnvironment(Environment):
             step_count=step,
             task_level=cls._task_level,
             done=done,
-            reward=round(min(max(reward, -0.999), 0.999), 3),
+            reward=round(min(max(reward, 0.001), 0.999), 3),
         )
 
     @property
