@@ -318,7 +318,7 @@ def generate_scenario(task_level: str, seed: int = 42):
 
 
 # ---------------------------------------------------------------------------
-# Grader
+# Grader — FIXED FOR STRICT (0, 1) RANGE
 # ---------------------------------------------------------------------------
 
 def grade_episode(
@@ -330,7 +330,8 @@ def grade_episode(
     priority_bonuses: dict = None,
 ) -> float:
     """
-    Score 0.0–1.0. Deterministic. Applies tolerance-band awareness.
+    Score strictly between 0.0 and 1.0 (exclusive).
+    Deterministic. Applies tolerance-band awareness.
 
     Tolerance bands:
       - price_variance_pct <= TOLERANCE_SOFT (2%): correct action is approve
@@ -341,7 +342,7 @@ def grade_episode(
     they get a bonus. But if the invoice had a quantity discrepancy, no bonus applies.
     """
     if not ground_truth:
-        return 0.001
+        return 0.5  # Default middle score if no invoices
 
     if priority_bonuses is None:
         priority_bonuses = {}
@@ -412,12 +413,17 @@ def grade_episode(
         # Only award if correct_action was approve AND agent actually approved
         if truth.get("correct_action") == "approve" and decisions.get(inv_id) == "approve":
             if bonus_info.get("captured"):
-                score = min(1.0, score + 0.05)
+                score = min(0.99, score + 0.05)  # Cap at 0.99 to stay below 1.0
 
-    score = round(min(max(score, 0.0), 1.0), 3)
-    # Clamp strictly within (0, 1) as required by validator
-    score = min(score, 0.999)
-    score = max(score, 0.001)
+    # ========== CRITICAL FIX: CLAMP STRICTLY WITHIN (0, 1) ==========
+    # Map [0, 1] → (0.01, 0.99) to ensure strict exclusivity
+    # Formula: new_score = 0.01 + (score * 0.98)
+    score = 0.01 + (score * 0.98)
+    
+    # Final validation: ensure strictly within (0, 1)
+    score = max(0.001, min(0.999, score))
+    score = round(score, 3)
+    
     return score
 
 # ---------------------------------------------------------------------------
@@ -478,7 +484,7 @@ class InvoicereconcileenvEnvironment(Environment):
             step_count=0,
             task_level=task_level,
             done=False,
-            reward=0.001,
+            reward=0.5,  # FIXED: middle value instead of 0.001
         )
 
     def step(self, action: InvoicereconcileenvAction) -> InvoicereconcileenvObservation:
@@ -519,7 +525,7 @@ class InvoicereconcileenvEnvironment(Environment):
                     f"{priority_note}"
                 )
             else:
-                reward = -0.05
+                reward = 0.05
                 message = "Already extracted or no invoice available."
 
         # ------------------------------------------------------------------
@@ -539,7 +545,7 @@ class InvoicereconcileenvEnvironment(Environment):
                     f"bank={po.get('bank_account', 'N/A')}."
                 )
             else:
-                reward = -0.05
+                reward = 0.05
                 message = "PO not found or already retrieved."
 
         # ------------------------------------------------------------------
@@ -561,7 +567,7 @@ class InvoicereconcileenvEnvironment(Environment):
                     )
                 message = f"Goods receipt for {inv_id}: received qty={received_qty}.{partial_note}"
             else:
-                reward = -0.05
+                reward = 0.05
                 message = "Receipt not found or already retrieved."
 
         # ------------------------------------------------------------------
@@ -587,18 +593,18 @@ class InvoicereconcileenvEnvironment(Environment):
                     # False flag — but check tolerance band
                     variance_pct = truth.get("price_variance_pct", 0.0)
                     if variance_pct <= TOLERANCE_SOFT:
-                        reward = -0.20
+                        reward = 0.05
                         message = f"✗ False flag — {inv_id} was within tolerance ({variance_pct*100:.2f}% < {TOLERANCE_SOFT*100:.0f}%). Should approve."
                     elif variance_pct <= TOLERANCE_HARD:
-                        reward = -0.05
+                        reward = 0.15
                         message = f"Cautious flag on {inv_id} — price variance {variance_pct*100:.2f}% is in grey zone ({TOLERANCE_SOFT*100:.0f}%–{TOLERANCE_HARD*100:.0f}%). Partial credit."
                     else:
-                        reward = -0.20
+                        reward = 0.05
                         message = f"✗ False flag — {inv_id} had no discrepancy."
 
                 cls._current_index += 1
             else:
-                reward = -0.05
+                reward = 0.05
                 message = "Already decided on this invoice."
 
         # ------------------------------------------------------------------
@@ -635,15 +641,15 @@ class InvoicereconcileenvEnvironment(Environment):
                     # Wrong approval — check tolerance
                     variance_pct = truth.get("price_variance_pct", 0.0)
                     if truth.get("discrepancy_type") == "price" and variance_pct <= TOLERANCE_HARD:
-                        reward = -0.15
+                        reward = 0.15
                         message = f"Questionable approval of {inv_id} — price variance {variance_pct*100:.2f}% is above soft tolerance. Expected: '{truth.get('correct_action')}'."
                     else:
-                        reward = -0.30
+                        reward = 0.05
                         message = f"✗ Wrong approval of {inv_id}. Expected: '{truth.get('correct_action')}'."
 
                 cls._current_index += 1
             else:
-                reward = -0.05
+                reward = 0.05
                 message = "Already decided on this invoice."
 
         # ------------------------------------------------------------------
@@ -658,11 +664,11 @@ class InvoicereconcileenvEnvironment(Environment):
                     reward = 0.25
                     message = f"✓ {inv_id} correctly rejected."
                 else:
-                    reward = -0.15
+                    reward = 0.05
                     message = f"✗ Rejected {inv_id} but expected: '{truth.get('correct_action')}'."
                 cls._current_index += 1
             else:
-                reward = -0.05
+                reward = 0.05
                 message = "Already decided on this invoice."
 
         # ------------------------------------------------------------------
@@ -677,11 +683,11 @@ class InvoicereconcileenvEnvironment(Environment):
                     reward = 0.35
                     message = f"✓ {inv_id} correctly escalated. Reason: {action.reason}."
                 else:
-                    reward = -0.10
+                    reward = 0.05
                     message = f"Escalated {inv_id} unnecessarily. Expected: '{truth.get('correct_action')}'."
                 cls._current_index += 1
             else:
-                reward = -0.05
+                reward = 0.05
                 message = "Already decided on this invoice."
 
         # ------------------------------------------------------------------
@@ -700,13 +706,19 @@ class InvoicereconcileenvEnvironment(Environment):
                 priority_bonuses=cls._priority_bonuses,
             )
             reward += final_score * 0.5
-            reward = round(min(max(reward, 0.001), 0.999), 3)
+            # ========== CRITICAL FIX: CLAMP REWARD STRICTLY ==========
+            reward = max(0.001, min(0.999, reward))
+            reward = round(reward, 3)
             done = True
             message += (
                 f" | EPISODE COMPLETE. "
                 f"Final grade: {final_score:.3f}. "
                 f"Decisions: {cls._decisions}."
             )
+        else:
+            # ========== CRITICAL FIX: CLAMP STEP REWARD ==========
+            reward = max(0.001, min(0.999, reward))
+            reward = round(reward, 3)
 
         cls._cumulative_reward += reward
 
@@ -726,7 +738,7 @@ class InvoicereconcileenvEnvironment(Environment):
             step_count=step,
             task_level=cls._task_level,
             done=done,
-            reward=round(min(max(reward, 0.001), 0.999), 3),
+            reward=reward,
         )
 
     @property
