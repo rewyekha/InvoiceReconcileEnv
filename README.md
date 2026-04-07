@@ -45,7 +45,7 @@ The agent operates as an AP clerk inside a simulated Accounts Payable department
 |--------|-----------|-------------|
 | `extract_fields` | `invoice_id` | Extract all structured fields from the current invoice. Always do this first. |
 | `retrieve_po` | `invoice_id` | Fetch the matching Purchase Order record for price and quantity comparison. |
-| `retrieve_receipt` | `retrieve_receipt` | Fetch the Goods Receipt to verify delivered quantities. |
+| `retrieve_receipt` | `invoice_id` | Fetch the Goods Receipt to verify delivered quantities. |
 | `flag_discrepancy` | `invoice_id`, `discrepancy_type`, `reason` | Flag an issue. Types: `price`, `quantity`, `duplicate`, `vendor`, `tax`, `other`. Advances to next invoice. |
 | `approve_payment` | `invoice_id`, `amount` | Approve invoice for payment. Advances to next invoice. |
 | `reject_invoice` | `invoice_id`, `reason` | Reject the invoice outright. Advances to next invoice. |
@@ -163,14 +163,10 @@ Produced by the deterministic rule-based agent in `inference.py`. Fully reproduc
 ### Local Development
 
 ```bash
-git clone https://huggingface.co/spaces/ShambhaviS08/InvoiceReconcileEnv
+git clone https://github.com/Sham-S08/InvoiceReconcileEnv
 cd InvoiceReconcileEnv
-
-pip install git+https://github.com/meta-pytorch/OpenEnv.git#subdirectory=src
-pip install fastapi uvicorn pydantic requests openai
-
-# From the OpenEnv root directory
-python -m uvicorn InvoiceReconcileEnv.server.app:app --host 0.0.0.0 --port 8001
+pip install openenv-core fastapi uvicorn pydantic requests openai
+python -m uvicorn server.app:app --host 0.0.0.0 --port 7860
 ```
 
 ### API Usage
