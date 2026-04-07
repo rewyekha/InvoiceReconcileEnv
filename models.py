@@ -52,7 +52,7 @@ class InvoicereconcileenvObservation(Observation):
     step_count:       int                   = Field(default=0,                description="Current step number in the episode")
     task_level:       str                   = Field(default="easy",           description="Task difficulty: easy | medium | hard")
     done:             bool                  = Field(default=False,            description="Whether the episode has ended")
-    reward:           float                 = Field(default=0.0,              description="Step reward")
+    reward:           float                 = Field(default=0.5,              description="Step reward")
 
     # --- Tolerance band hints (surface to agent for learning) ---
     tolerance_soft_pct: float               = Field(default=2.0,              description="Price variance <= this % is acceptable (approve)")
