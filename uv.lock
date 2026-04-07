@@ -1565,8 +1565,8 @@ wheels = [
 
 [[package]]
 name = "openenv-core"
-version = "0.2.2"
-source = { registry = "https://pypi.org/simple" }
+version = "0.2.3"
+source = { git = "https://github.com/meta-pytorch/OpenEnv.git?rev=v0.2.3#2faae32750487168419afb4f1f8dc4a9efaac5c7" }
 dependencies = [
     { name = "fastapi" },
     { name = "fastmcp" },
@@ -1584,10 +1584,6 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/54/b9/f134f9de0fcb4a44c1376872fb19fe86013a69d226e320dc77217ca2ec78/openenv_core-0.2.2.tar.gz", hash = "sha256:b891eeb38845cd0c72e94f72615b0fe44c893e53822fd0843c1fafc53fc31bad", size = 146412, upload-time = "2026-03-20T17:52:36.651Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/fd/9ab2b271ab763ccb6bf83d7495c45cdef4e38877d96ecf9314e1c4a95fae/openenv_core-0.2.2-py3-none-any.whl", hash = "sha256:1b99233448aa824c7974ad7c53d46d2edb9302cdc5a3ab0e2ade3a4943f17a63", size = 174125, upload-time = "2026-03-20T17:52:35.605Z" },
-]
 
 [package.optional-dependencies]
 core = [
@@ -1603,7 +1599,12 @@ name = "openenv-invoicereconcileenv"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "fastapi" },
+    { name = "openai" },
     { name = "openenv-core", extra = ["core"] },
+    { name = "pydantic" },
+    { name = "requests" },
+    { name = "uvicorn" },
 ]
 
 [package.optional-dependencies]
@@ -1614,9 +1615,14 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "openenv-core", extras = ["core"], specifier = ">=0.2.2" },
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "openai", specifier = ">=1.0.0" },
+    { name = "openenv-core", extras = ["core"], git = "https://github.com/meta-pytorch/OpenEnv.git?rev=v0.2.3" },
+    { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+    { name = "requests", specifier = ">=2.31.0" },
+    { name = "uvicorn", specifier = ">=0.24.0" },
 ]
 provides-extras = ["dev"]
 
