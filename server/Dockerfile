@@ -1,30 +1,31 @@
 FROM ghcr.io/meta-pytorch/openenv-base:latest AS builder
 
 WORKDIR /app
-
 COPY . /app/env
-
 WORKDIR /app/env
 
-RUN apt-get update && apt-get install -y --no-install-recommends git curl \
+RUN apt-get update && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir \
-    "openenv-core[core]>=0.2.2" \
-    "fastapi>=0.115.0" \
-    "uvicorn>=0.24.0" \
-    "pydantic>=2.0.0" \
-    "requests>=2.31.0" \
-    "openai>=1.0.0"
+RUN if ! command -v uv >/dev/null 2>&1; then \
+        curl -LsSf https://astral.sh/uv/install.sh | sh && \
+        mv /root/.local/bin/uv /usr/local/bin/uv && \
+        mv /root/.local/bin/uvx /usr/local/bin/uvx; \
+    fi
+
+RUN if [ -f uv.lock ]; then \
+        uv sync --frozen --no-editable; \
+    else \
+        uv sync --no-editable; \
+    fi
 
 FROM ghcr.io/meta-pytorch/openenv-base:latest
 
-WORKDIR /app
+WORKDIR /app/env
 
 COPY --from=builder /app/env /app/env
-COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
-COPY --from=builder /usr/local/bin /usr/local/bin
 
+ENV PATH="/app/env/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/env:/app/env/server:${PYTHONPATH}"
 ENV ENABLE_WEB_INTERFACE=true
 
