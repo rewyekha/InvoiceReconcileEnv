@@ -478,7 +478,7 @@ class InvoicereconcileenvEnvironment(Environment):
             step_count=0,
             task_level=task_level,
             done=False,
-            reward=0.0,
+            reward=0.001,
         )
 
     def step(self, action: InvoicereconcileenvAction) -> InvoicereconcileenvObservation:
@@ -700,6 +700,7 @@ class InvoicereconcileenvEnvironment(Environment):
                 priority_bonuses=cls._priority_bonuses,
             )
             reward += final_score * 0.5
+            reward = round(min(max(reward, 0.001), 0.999), 3)
             done = True
             message += (
                 f" | EPISODE COMPLETE. "
@@ -725,7 +726,7 @@ class InvoicereconcileenvEnvironment(Environment):
             step_count=step,
             task_level=cls._task_level,
             done=done,
-            reward=round(reward, 3),
+            reward=round(min(max(reward, -0.999), 0.999), 3),
         )
 
     @property
