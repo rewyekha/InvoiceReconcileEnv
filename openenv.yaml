@@ -28,7 +28,7 @@ tasks:
     description: >
       Process a single clean invoice with a straightforward three-way match.
       Agent must extract fields, verify against PO and goods receipt, and approve.
-    expected_score: 1.0
+    expected_score: 0.999
 
   - id: medium
     name: "Batch Invoice Processing"
@@ -37,7 +37,7 @@ tasks:
       Process a batch of 3 invoices with mixed conditions: one clean approve,
       one price variance above the 5% hard threshold (flag:price),
       and one partial shipment where 80 of 100 units were received (flag:quantity).
-    expected_score: 1.0
+    expected_score: 0.999
 
   - id: hard
     name: "Complex Batch with Fraud Detection"
@@ -50,7 +50,7 @@ tasks:
       shipment trap, and a fraud-like pattern where the invoice bank account does
       not match the PO vendor bank account. Agent must balance accuracy, efficiency,
       and anomaly detection.
-    expected_score: 1.0
+    expected_score: 0.999
 
 action_space:
   type: discrete
@@ -146,9 +146,9 @@ reward_function:
     Dense reward shaping throughout the episode. Rewards correct field extraction
     (+0.15), PO retrieval (+0.10), receipt retrieval (+0.10), correct flag with
     right type (+0.35), correct approval (+0.40), correct escalation (+0.35).
-    Penalties for false flags (-0.20), wrong approvals (-0.30), redundant actions
-    (-0.05). Efficiency penalty (×0.85) if >80% of max steps used.
+    Penalties for false flags, wrong approvals, redundant actions all clamped.
+    Efficiency penalty (×0.85) if >80% of max steps used.
     Episode ends with bonus reward = final_grade × 0.5.
     Early payment discount capture adds +0.10 bonus.
-  range: [-1.0, 1.5]
+  range: [0.001, 0.999]
   sparse: false
