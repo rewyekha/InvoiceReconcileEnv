@@ -71,12 +71,7 @@ def llm_agent(observation: dict, task_level: str) -> dict:
     """
     Calls the LLM via injected API_BASE_URL proxy.
     Falls back to rule-based if LLM call fails.
-    """
-    client = OpenAI(
-    base_url=os.environ["API_BASE_URL"],
-    api_key=os.environ["API_KEY"]
-    )
-    
+    """    
     prompt = f"""You are an Accounts Payable agent processing invoices.
 
 Current observation:
