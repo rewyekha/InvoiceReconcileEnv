@@ -147,10 +147,10 @@ Produced by the deterministic rule-based agent in `inference.py`. Fully reproduc
 
 | Task | Final Grade | Total Reward |
 |------|------------|--------------|
-| Easy | **1.000** | ~0.85 |
-| Medium | **1.000** | ~2.35 |
-| Hard | **1.000** | ~4.10 |
-| **Average** | **1.000** | — |
+| Easy | **0.999** | ~0.85 |
+| Medium | **0.999** | ~2.35 |
+| Hard | **0.999** | ~4.10 |
+| **Average** | **0.999** | — |
 
 ---
 
