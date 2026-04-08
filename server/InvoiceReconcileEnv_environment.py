@@ -400,8 +400,8 @@ def grade_episode(
 
     # ========== ABSOLUTE FIX: GUARANTEE OUTPUT IN (0, 1) ==========
     # Robust normalization (exactly the best version you asked for)
-    if score > 0:
-            score = score / max(score, 1.0)
+    # if score > 0:
+    #         score = score / max(score, 1.0)
         
     score = round(score, 3)
     score = min(score, 0.999)     
