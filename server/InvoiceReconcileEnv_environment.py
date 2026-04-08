@@ -325,7 +325,7 @@ def grade_episode(
 ) -> float:
     """
     Score strictly between 0 and 1 (exclusive).
-    Returns value guaranteed to be > 0 and < 1.
+    Returns the REAL computed score (no forced 0.999).
     """
     if not ground_truth:
         return 0.5
@@ -402,11 +402,9 @@ def grade_episode(
     # Robust normalization (exactly the best version you asked for)
     if score > 0:
         score = score / max(score, 1.0)
-    score = min(score, 0.999)
-    score = max(score, 0.001)
     
-    # Round to 3 decimals (validator loves clean numbers)
-    score = round(score, 3)
+    score = max(score, 0.001)
+    score = round(score, 3)  # real score, no artificial cap
     
     return score
 
