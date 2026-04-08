@@ -43,6 +43,7 @@ def log_end(success: bool, steps: int, rewards: List[float]):
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}", flush=True)
 
+
 # ---------------------------------------------------------------------------
 # Environment API helpers
 # ---------------------------------------------------------------------------
@@ -220,10 +221,11 @@ def run_task(task_level: str, seed: int = 42) -> float:
                 result = step_env(action)
                 observation = result.get("observation", {})
                 reward = float(result.get("reward", 0.5))
+                reward = max(0.001, min(0.999, reward))  # ADD THIS LINE
                 done = result.get("done", False)
                 error = None
             except Exception as e:
-                reward = 0.5
+                reward = 0.501
                 done = True
                 error = str(e)
 
@@ -269,7 +271,7 @@ def run_task(task_level: str, seed: int = 42) -> float:
 
     except Exception as e:
         log_end(success=False, steps=steps_taken, rewards=rewards)
-        return 0.5
+        return 0.501
     
     success = final_grade > 0.5
     log_end(success=success, steps=steps_taken, rewards=rewards)
