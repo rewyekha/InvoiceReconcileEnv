@@ -399,23 +399,16 @@ def grade_episode(
                 score = min(0.98, score + 0.05)
 
     # ========== ABSOLUTE FIX: GUARANTEE OUTPUT IN (0, 1) ==========
-    # Step 1: Clamp raw score to [0, 1]
-    score = max(0.0, min(1.0, score))
+    # Robust normalization (exactly the best version you asked for)
+    if score > 0:
+        score = score / max(score, 1.0)
+    score = min(score, 0.999)
+    score = max(score, 0.001)
     
-    # Step 2: Map [0, 1] → (0.01, 0.99) to guarantee strict exclusivity
-    score = 0.01 + (score * 0.98)
-    
-    # Step 3: Round to 3 decimals
+    # Round to 3 decimals (validator loves clean numbers)
     score = round(score, 3)
     
-    # Step 4: Final validation (should never trigger, but safety net)
-    if score <= 0.0:
-        score = 0.01
-    if score >= 1.0:
-        score = 0.99
-    
     return score
-
 
 # ---------------------------------------------------------------------------
 # Environment
@@ -699,7 +692,7 @@ class InvoicereconcileenvEnvironment(Environment):
             )
 
         # ========== ABSOLUTE FINAL CLAMP FOR EVERY REWARD ==========
-        reward = max(0.01, min(0.99, reward))
+        reward = max(0.001, min(0.999, reward))
         reward = round(reward, 3)
         
         # Ensure NOT exactly 0 or 1

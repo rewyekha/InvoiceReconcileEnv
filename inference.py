@@ -16,8 +16,8 @@ from typing import List, Optional
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
 API_KEY      = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN", "dummy-key")
 MODEL_NAME   = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-#SPACE_URL    = os.environ.get("SPACE_URL", "https://shambhavis08-invoicereconcileenv.hf.space")
-SPACE_URL = os.environ.get("SPACE_URL", "http://localhost:7860")
+SPACE_URL    = os.environ.get("SPACE_URL", "https://shambhavis08-invoicereconcileenv.hf.space")
+#SPACE_URL = os.environ.get("SPACE_URL", "http://localhost:7860")
 
 TOLERANCE_SOFT = 0.02
 TOLERANCE_HARD = 0.05
