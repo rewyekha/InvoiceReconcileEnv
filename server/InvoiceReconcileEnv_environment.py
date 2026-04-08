@@ -398,15 +398,14 @@ def grade_episode(
             if bonus_info.get("captured"):
                 score = min(0.98, score + 0.05)
 
-    # ========== ABSOLUTE FIX: GUARANTEE OUTPUT IN (0, 1) ==========
-    # Robust normalization (exactly the best version you asked for)
-    # if score > 0:
-    #         score = score / max(score, 1.0)
-        
-    score = round(score, 3)
-    # CRITICAL: Cap to 0.998 to prevent {:.3f} formatting rounding to 1.000
-    score = min(score, 0.998)     
-    score = max(score, 0.001)     # safety
+    # ===== NUCLEAR FIX: Epsilon-based clamping =====
+    # Use 1e-6 to ensure mathematically impossible to hit 0.0 or 1.0
+    score = max(1e-6, min(1.0 - 1e-6, score))
+    score = round(score, 6)  # Higher precision
+    
+    # Paranoia check
+    if score <= 0.0 or score >= 1.0:
+        score = 0.5
 
     return score
 
@@ -684,22 +683,24 @@ class InvoicereconcileenvEnvironment(Environment):
                 cls.MAX_STEPS,
                 priority_bonuses=cls._priority_bonuses,
             )
-            # CRITICAL: Ensure final_score cannot produce 1.000 when formatted with {:.3f}
-            final_score = max(0.001, min(0.998, final_score))
+            # CRITICAL: Epsilon clamp before formatting
+            final_score = max(1e-6, min(1.0 - 1e-6, final_score))
+            if final_score <= 0.0 or final_score >= 1.0:
+                final_score = 0.5
             
             reward += final_score * 0.04                   # CHANGED: tiny final bonus
             done = True
             message += (
                 f" | EPISODE COMPLETE. "
-                f"Final grade: {final_score:.3f}. "
+                f"Final grade: {final_score:.6f}. "
                 f"Decisions: {cls._decisions}."
             )
 
-        # ========== ABSOLUTE FINAL CLAMP FOR EVERY REWARD ==========
-        reward = max(0.001, min(0.999, reward))
-        reward = round(reward, 3)
+        # ===== EPSILON CLAMP FOR EVERY REWARD =====
+        reward = max(1e-6, min(1.0 - 1e-6, reward))
+        reward = round(reward, 6)
         
-        # Ensure NOT exactly 0 or 1
+        # Paranoia: ensure NOT exactly 0 or 1
         if reward <= 0.0 or reward >= 1.0:
             reward = 0.5
 
