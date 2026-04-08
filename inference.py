@@ -257,7 +257,7 @@ def run_task(task_level: str, seed: int = 42) -> float:
                         final_grade = float(
                             msg.split("Final grade:")[1].strip().split()[0].rstrip(".")
                         )
-                        final_grade = max(0.001, min(0.999, final_grade))
+                        #final_grade = max(0.001, min(0.999, final_grade))
                     except Exception:
                         final_grade = 0.5
                 break
