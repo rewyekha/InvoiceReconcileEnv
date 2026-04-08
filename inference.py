@@ -112,8 +112,8 @@ Respond with ONLY a valid JSON object. No explanation. No markdown. Examples:
         if "action_type" in action:
             return action
     except Exception as e:
-        print(f"[LLM ERROR] {e}", flush=True)
-        #pass  # fall through to rule-based
+        #print(f"[LLM ERROR] {e}", flush=True)
+        pass  # fall through to rule-based
 
     return rule_based_agent(observation)
 
